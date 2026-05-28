@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Controle de Paletes</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4f4f4">
+
+<style>
+
+*{
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+}
+
+body{
+  margin:0;
+  padding:20px;
+  background:#f4f4f4;
+}
+
+.container{
+  max-width:700px;
+  margin:auto;
+}
+
+.topo{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+
+h1{
+  margin:0;
+}
+
+.add-btn{
+  border:none;
+  background:#4caf50;
+  color:white;
+  width:55px;
+  height:55px;
+  border-radius:14px;
+  font-size:30px;
+  cursor:pointer;
+}
+
+.card{
+  background:white;
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 0 10px rgba(0,0,0,0.08);
+}
+
+.concluido{
+  background:#dff5df;
+}
+
+.marca{
+  font-size:24px;
+  font-weight:bold;
+}
+
+.calibre{
+  margin-top:5px;
+  font-size:18px;
+  color:#555;
+}
+
+.progresso{
+  margin-top:20px;
+  font-size:30px;
+  font-weight:bold;
+}
+
+.faltam{
+  margin-top:10px;
+  font-size:18px;
+}
+
+.status{
+  margin-top:15px;
+  font-size:18px;
+  font-weight:bold;
+  color:#2e7d32;
+}
+
+.botoes{
+  display:flex;
+  gap:12px;
+  margin-top:20px;
+}
+
+.contador-btn{
+  flex:1;
+  height:60px;
+  border:none;
+  border-radius:14px;
+  font-size:28px;
+  cursor:pointer;
+  background:#e5e5e5;
+}
+
+.remove-btn{
+  width:100%;
+  margin-top:15px;
+  border:none;
+  border-radius:14px;
+  height:50px;
+  background:#ff4d4d;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+
+.modal-content{
+  background:white;
+  width:100%;
+  max-width:500px;
+  border-radius:18px;
+  padding:20px;
+}
+
+input{
+  width:100%;
+  margin-top:10px;
+  margin-bottom:15px;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+
+.salvar-btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  height:55px;
+  background:#4caf50;
+  color:white;
+  font-size:18px;
+  cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="topo">
+
+    <h1>📦 Controle de Paletes</h1>
+
+    <button
+      class="add-btn"
+      onclick="abrirModal()">
+      +
+    </button>
+
+  </div>
+
+  <div id="lista"></div>
+
+</div>
+
+<div class="modal" id="modal">
+
+  <div class="modal-content">
+
+    <h2>Novo Pedido</h2>
+
+    <input
+      type="text"
+      id="marca"
+      placeholder="Marca">
+
+    <input
+      type="text"
+      id="calibre"
+      placeholder="Calibre">
+
+    <input
+      type="number"
+      id="meta"
+      placeholder="Quantidade de paletes">
+
+    <button
+      class="salvar-btn"
+      onclick="criarPedido()">
+      Criar pedido
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+let pedidos =
+JSON.parse(localStorage.getItem("pedidos")) || [];
+
+function salvar(){
+
+  localStorage.setItem(
+    "pedidos",
+    JSON.stringify(pedidos)
+  );
+
+}
+
+function renderizar(){
+
+  const lista =
+  document.getElementById("lista");
+
+  lista.innerHTML = "";
+
+  pedidos.forEach((pedido,index)=>{
+
+    const concluido =
+    pedido.atual >= pedido.meta;
+
+    const faltam =
+    pedido.meta - pedido.atual;
+
+    const card =
+    document.createElement("div");
+
+    card.className =
+    "card" + (concluido ? " concluido" : "");
+
+    card.innerHTML = `
+
+      <div class="marca">
+        🍍 ${pedido.marca}
+      </div>
+
+      <div class="calibre">
+        Calibre ${pedido.calibre}
+      </div>
+
+      <div class="progresso">
+        ${pedido.atual} / ${pedido.meta}
+      </div>
+
+      <div class="faltam">
+        Faltam: ${faltam < 0 ? 0 : faltam}
+      </div>
+
+      ${
+        concluido
+        ?
+        `<div class="status">
+          ✅ Pedido concluído
+        </div>`
+        :
+        ""
+      }
+
+      <div class="botoes">
+
+        <button
+          class="contador-btn"
+          onclick="alterar(${index},-1)">
+          -
+        </button>
+
+        <button
+          class="contador-btn"
+          onclick="alterar(${index},1)">
+          +
+        </button>
+
+      </div>
+
+      <button
+        class="remove-btn"
+        onclick="remover(${index})">
+        🗑 Remover pedido
+      </button>
+
+    `;
+
+    lista.appendChild(card);
+
+  });
+
+}
+
+function alterar(index,valor){
+
+  pedidos[index].atual += valor;
+
+  if(pedidos[index].atual < 0){
+    pedidos[index].atual = 0;
+  }
+
+  if(pedidos[index].atual > pedidos[index].meta){
+    pedidos[index].atual = pedidos[index].meta;
+  }
+
+  salvar();
+
+  renderizar();
+
+}
+function abrirModal(){
+
+  document.getElementById("modal")
+  .style.display = "flex";
+
+}
+
+function fecharModal(){
+
+  document.getElementById("modal")
+  .style.display = "none";
+
+}
+
+function criarPedido(){
+
+  const marca =
+  document.getElementById("marca").value;
+
+  const calibre =
+  document.getElementById("calibre").value;
+
+  const meta =
+  Number(
+    document.getElementById("meta").value
+  );
+
+  if(!marca || !calibre || !meta){
+    return;
+  }
+
+  pedidos.push({
+
+    marca,
+    calibre,
+    meta,
+    atual:0
+
+  });
+
+  salvar();
+
+  renderizar();
+
+  fecharModal();
+
+  document.getElementById("marca").value = "";
+  document.getElementById("calibre").value = "";
+  document.getElementById("meta").value = "";
+
+}
+
+function remover(index){
+
+  pedidos.splice(index,1);
+
+  salvar();
+
+  renderizar();
+
+}
+
+window.onclick = function(event){
+
+  const modal =
+  document.getElementById("modal");
+
+  if(event.target == modal){
+
+    fecharModal();
+
+  }
+
+}
+
+renderizar();
+
+if("serviceWorker" in navigator){
+
+  navigator.serviceWorker.register(
+    "./service-worker.js"
+  );
+
+}
+
+</script>
+
+</body>
+</html>
